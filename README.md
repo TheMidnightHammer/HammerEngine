@@ -14,7 +14,9 @@ The number 1 goal of HammerEngine is performance on low-end machines. It out per
 # What does Hammer Engine support?
 
 Vulkan Native: Built from the ground up for modern hardware efficiency.
+
 Collision System: Includes a functional, simple collision detection system.
+
 Developer Friendly: Designed for rapid prototyping without sacrificing performance.
 
 # Build and run demos
