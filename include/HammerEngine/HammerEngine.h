@@ -3,6 +3,7 @@
 
 #include <chrono>
 #include <glm/glm.hpp>
+#include <memory>
 #include <optional>
 #include <string>
 #include <vector>
@@ -42,6 +43,71 @@ extern std::vector<Vertex> vertices;
 extern std::vector<uint32_t> indices;
 
 
+class HammerEngine;
+class HammerPipeline;
+
+class HammerMesh {
+public:
+    HammerMesh(HammerEngine& engine, HammerPipeline* pipeline, 
+               const std::vector<Vertex>& vertices, 
+               const std::vector<uint32_t>& indices);
+    
+    ~HammerMesh();
+
+    std::vector<Vertex> vertexData;
+
+    std::vector<uint32_t> indexData;
+
+    // Disable copying to prevent double-free of Vulkan resources
+    HammerMesh(const HammerMesh&) = delete;
+    HammerMesh& operator=(const HammerMesh&) = delete;
+
+    void bindAndDraw(VkCommandBuffer commandBuffer);
+    
+    HammerPipeline* getPipeline() const { return pipeline; }
+
+    void createVertexBuffer(const std::vector<Vertex>& vertices);
+    void createIndexBuffer(const std::vector<uint32_t>& indices);
+
+    HammerEngine& engine;
+    HammerPipeline* pipeline;
+
+    VkBuffer vertexBuffer = VK_NULL_HANDLE;
+    VkDeviceMemory vertexBufferMemory = VK_NULL_HANDLE;
+    VkBuffer indexBuffer = VK_NULL_HANDLE;
+    VkDeviceMemory indexBufferMemory = VK_NULL_HANDLE;
+
+    uint32_t indexCount;
+};
+
+class HammerPipeline {
+public:
+    HammerPipeline(
+        HammerEngine& engine, 
+        std::string& vertPath, 
+        std::string& fragPath,
+        int renderTriangleMod,
+        bool triangleRender2SideMode);
+
+    ~HammerPipeline();
+
+    // Disable copying to avoid double-deletion of Vulkan handles
+    HammerPipeline(const HammerPipeline&) = delete;
+    HammerPipeline& operator=(const HammerPipeline&) = delete;
+
+    void bind(VkCommandBuffer commandBuffer);
+    void createGraphicsPipeline(
+        std::string& vertPath, 
+        std::string& fragPath,
+        int renderTriangleMod,
+        bool triangleRender2SideMode);
+
+    HammerEngine& hammerEngine;
+    VkPipeline graphicsPipeline;
+    VkPipelineLayout pipelineLayout; 
+};
+
+
 class HammerEngine {
 public:
 
@@ -49,6 +115,8 @@ public:
     uint32_t WindowHeight;
 
     bool enableValidationLayers;
+
+    void addMeshRenderer(HammerMesh mesh);
 
     float yaw = -90.0f; // Horizontal angle
     float pitch = 0.0f; // Vertical angle
@@ -66,6 +134,8 @@ public:
     bool triangleRender2SideMode = false; // render both side of triangle
 
     const char *texturePath; // path to texture atlas
+
+    std::vector<std::unique_ptr<HammerMesh>> meshs;
 
     GLFWwindow* window; // GLFW window
 
@@ -104,8 +174,6 @@ public:
     void updateFrameTimeStart();
 
     void updateVertexIndexBuffers(); // update the vertex and indices (mesh)
-
-private:
 
     double currentTime = glfwGetTime();
     std::chrono::time_point<std::chrono::high_resolution_clock> start;

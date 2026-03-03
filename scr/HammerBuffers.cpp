@@ -32,43 +32,6 @@ void HammerEngine::copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t wi
 void HammerEngine::updateVertexIndexBuffers(){
     VkDeviceSize newVertexSize = sizeof(Vertex) * vertices.size();
     VkDeviceSize newIndexSize  = sizeof(uint32_t) * indices.size();
-
-    //bool resizeVertexBuffer = (newVertexSize > vertexBufferSize);
-    //bool resizeIndexBuffer  = (newIndexSize  > indexBufferSize);
-
-    // // --- Recreate vertex buffer if needed ---
-    // if (resizeVertexBuffer && resizeIndexBuffer) {
-        
-    //     vkDestroyBuffer(device, vertexBuffer, nullptr);
-    //     vkFreeMemory(device, vertexBufferMemory, nullptr);
-        
-
-    //     createBuffer(
-    //         newVertexSize,
-    //         VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-    //         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-    //         vertexBuffer,
-    //         vertexBufferMemory
-    //     );
-
-    //     vertexBufferSize = newVertexSize;
-
-        
-
-    //     vkDestroyBuffer(device, indexBuffer, nullptr);
-    //     vkFreeMemory(device, indexBufferMemory, nullptr);
-        
-
-    //     createBuffer(
-    //         newIndexSize,
-    //         VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-    //         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-    //         indexBuffer,
-    //         indexBufferMemory
-    //     );
-
-    //     indexBufferSize = newIndexSize;
-    // }
     
     
 
@@ -90,17 +53,17 @@ void HammerEngine::updateVertexIndexBuffers(){
         //copyBuffer(stagingBuffer, indexBuffer, newIndexSize);
 
 
-        // VkCommandBuffer commandBuffer = beginSingleTimeCommands();
+        VkCommandBuffer commandBuffer = beginSingleTimeCommands();
 
-        // VkBufferCopy copyRegion{};
-        // copyRegion.size = newVertexSize;
-        // vkCmdCopyBuffer(commandBuffer, stagingBuffer, vertexBuffer, 1, &copyRegion);
+        VkBufferCopy copyRegion{};
+        copyRegion.size = newVertexSize;
+        vkCmdCopyBuffer(commandBuffer, stagingBuffer, vertexBuffer, 1, &copyRegion);
 
-        // VkBufferCopy copyRegion2{};
-        // copyRegion.size = newIndexSize;
-        // vkCmdCopyBuffer(commandBuffer, stagingBuffer, indexBuffer, 1, &copyRegion2);
+        VkBufferCopy copyRegion2{};
+        copyRegion.size = newIndexSize;
+        vkCmdCopyBuffer(commandBuffer, stagingBuffer, indexBuffer, 1, &copyRegion2);
 
-        // endSingleTimeCommands(commandBuffer);
+        endSingleTimeCommands(commandBuffer);
     }
 
     

@@ -1,13 +1,28 @@
 #include "../../include/HammerEngine/HammerEngine.h"
 #include "../../include/HammerEngine/HammerRect.h"
 #include <vector>
+#include <memory>
 #include <glm/glm.hpp>
 
-// === Entry Point ===
 int main() {
     HammerEngine Engine;
 
-    vertices = {
+    // 1. Initial Configuration
+    Engine.enableValidationLayers = true;
+    Engine.WindowWidth = 900;
+    Engine.WindowHeight = 900;
+    Engine.texturePath = "textures/texture.png";
+    Engine.cameraMode2dOr3d = 0;
+    Engine.cameraSpeed = 0.1f;
+    Engine.renderDistance = 64.0f;
+    Engine.cameraPosition = glm::vec3(0, 5, 0);
+
+    // 2. Initialize Core Vulkan
+    Engine.initWindow();
+    Engine.initVulkan();
+
+    // 3. Define the cube data locally
+    std::vector<Vertex> localVertices = {
         // Front (tile 0,0)
         {{-0.5f,-0.5f, 0.5f},{1.0f,0.0f,0.0f},{0.0000f,0.0625f}},
         {{ 0.5f,-0.5f, 0.5f},{0.0f,1.0f,0.0f},{0.0625f,0.0625f}},
@@ -45,46 +60,52 @@ int main() {
         {{-0.5f,-0.5f, 0.5f},{0.0f,0.0f,0.5f},{0.0000f,0.0625f}}
     };
 
-    indices = {
-        // Front face
-        0, 1, 2, 2, 3, 0,
-        // Back face
-        4, 5, 6, 6, 7, 4,
-        // Top face
-        8, 9, 10, 10, 11, 8,
-        // Bottom face
-        12, 13, 14, 14, 15, 12,
-        // Right face
-        16, 17, 18, 18, 19, 16,
-        // Left face
-        20, 21, 22, 22, 23, 20
+    std::vector<uint32_t> localIndices = {
+        0, 1, 2, 2, 3, 0,       // Front
+        4, 5, 6, 6, 7, 4,       // Back
+        8, 9, 10, 10, 11, 8,    // Top
+        12, 13, 14, 14, 15, 12, // Bottom
+        16, 17, 18, 18, 19, 16, // Right
+        20, 21, 22, 22, 23, 20  // Left
     };
 
-    Engine.setMaxVertciesIndicesSize(sizeof(Vertex) * vertices.size());
-    Engine.cameraPosition = glm::vec3(0,5,0);
-    Engine.vertShaderPath = "shaders/vert.spv";
-    Engine.fragShaderPath = "shaders/frag.spv";
-    Engine.enableValidationLayers = true;
-    Engine.WindowWidth = 900;
-    Engine.WindowHeight = 900;
-    Engine.texturePath = "textures/texture.png";
-    Engine.cameraMode2dOr3d = 0;
-    Engine.cameraSpeed = 0.1;
-    Engine.renderTriangleMod = 0;
-    Engine.triangleRender2SideMode = false;
-    Engine.renderDistance = 64.0f;
+    // 4. Create Pipeline and Mesh
+    std::string vPath = "shaders/vert.spv";
+    std::string fPath = "shaders/frag.spv";
+    
+    // We create the pipeline as a unique_ptr to manage its lifetime
+    auto mainPipeline = std::make_unique<HammerPipeline>(
+        Engine, vPath, fPath, 1, true
+    );
 
-    Engine.initWindow();
-    Engine.initVulkan();
+    // Add the cube to the engine's mesh list
+    Engine.meshs.push_back(std::make_unique<HammerMesh>(
+        Engine, 
+        mainPipeline.get(), 
+        localVertices, 
+        localIndices
+    ));
 
+    // 5. Drawing loop
     Engine.drawPassStart();
     while (!glfwWindowShouldClose(Engine.window)) {
         Engine.updateFrameTimeStart();
 
-        HammerRectCubeF cube{0,0,0, 1,1,1};
-        HammerRectCubeF camera{Engine.cameraPosition.x,Engine.cameraPosition.y-1,Engine.cameraPosition.z, 1,1,1};
+        // Collision logic
+        HammerRectCubeF cube{0, 0, 0, 1, 1, 1};
+        HammerRectCubeF camera{
+            Engine.cameraPosition.x,
+            Engine.cameraPosition.y - 1.0f,
+            Engine.cameraPosition.z, 
+            1, 1, 1
+        };
 
-        Engine.updateCameraDefaultGravety3D(camera.HammerRectCollideCubeF(cube));
+        bool isColliding = camera.HammerRectCollideCubeF(cube);
+        
+        // Update gravity based on collision
+        Engine.updateCameraDefaultGravety3D(isColliding);
+        
+        // The Engine now automatically loops through Engine.meshs in drawFrame
         Engine.drawFrame();
 
         Engine.updateFrameTimeEnd();

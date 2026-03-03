@@ -172,16 +172,16 @@ void HammerEngine::initVulkan() {
     createImageViews();
     createRenderPass();
     createDescriptorSetLayout();
-    createGraphicsPipeline();
+    //createGraphicsPipeline();
     createCommandPool();
     createDepthResources();
     createFramebuffers();
     createTextureImage();
     createTextureImageView();
     createTextureSampler();
-    createStagingBuffer();
-    createVertexBuffer();
-    createIndexBuffer();
+    //createStagingBuffer();
+    //createVertexBuffer();
+    //createIndexBuffer();
     createUniformBuffers();
     createDescriptorPool();
     createDescriptorSets();
@@ -318,6 +318,107 @@ void HammerEngine::recreateSwapChain() {
     createImageViews();
     createDepthResources();
     createFramebuffers();
+}
+
+void HammerEngine::addMeshRenderer(HammerMesh mesh){
+    meshs.push_back(std::make_unique<HammerMesh>(mesh.engine, mesh.pipeline, mesh.vertexData, mesh.indexData));
+}
+
+HammerMesh::HammerMesh(HammerEngine& engine, HammerPipeline* pipeline, 
+                       const std::vector<Vertex>& vertices, 
+                       const std::vector<uint32_t>& indices) 
+    : engine(engine), pipeline(pipeline) {
+    
+    indexCount = static_cast<uint32_t>(indices.size());
+    createVertexBuffer(vertices);
+    createIndexBuffer(indices);
+}
+
+HammerMesh::~HammerMesh() {
+    // Accessing 'device' directly from HammerEngine as per your header
+    vkDestroyBuffer(engine.device, vertexBuffer, nullptr);
+    vkFreeMemory(engine.device, vertexBufferMemory, nullptr);
+    vkDestroyBuffer(engine.device, indexBuffer, nullptr);
+    vkFreeMemory(engine.device, indexBufferMemory, nullptr);
+}
+
+void HammerMesh::createVertexBuffer(const std::vector<Vertex>& vertices) {
+    VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
+
+    VkBuffer stagingBuffer;
+    VkDeviceMemory stagingBufferMemory;
+
+    // Use HammerEngine::createBuffer helper
+    engine.createBuffer(
+        bufferSize, 
+        VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
+        stagingBuffer, 
+        stagingBufferMemory
+    );
+
+    void* data;
+    vkMapMemory(engine.device, stagingBufferMemory, 0, bufferSize, 0, &data);
+    memcpy(data, vertices.data(), (size_t)bufferSize);
+    vkUnmapMemory(engine.device, stagingBufferMemory);
+
+    engine.createBuffer(
+        bufferSize, 
+        VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
+        vertexBuffer, 
+        vertexBufferMemory
+    );
+
+    // Use HammerEngine::copyBuffer helper
+    engine.copyBuffer(stagingBuffer, vertexBuffer, bufferSize);
+
+    vkQueueWaitIdle(engine.graphicsQueue);
+
+    vkDestroyBuffer(engine.device, stagingBuffer, nullptr);
+    vkFreeMemory(engine.device, stagingBufferMemory, nullptr);
+}
+
+void HammerMesh::createIndexBuffer(const std::vector<uint32_t>& indices) {
+    VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
+
+    VkBuffer stagingBuffer;
+    VkDeviceMemory stagingBufferMemory;
+
+    engine.createBuffer(
+        bufferSize, 
+        VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
+        stagingBuffer, 
+        stagingBufferMemory
+    );
+
+    void* data;
+    vkMapMemory(engine.device, stagingBufferMemory, 0, bufferSize, 0, &data);
+    memcpy(data, indices.data(), (size_t)bufferSize);
+    vkUnmapMemory(engine.device, stagingBufferMemory);
+
+    engine.createBuffer(
+        bufferSize, 
+        VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, 
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
+        indexBuffer, 
+        indexBufferMemory
+    );
+
+    engine.copyBuffer(stagingBuffer, indexBuffer, bufferSize);
+
+    vkDestroyBuffer(engine.device, stagingBuffer, nullptr);
+    vkFreeMemory(engine.device, stagingBufferMemory, nullptr);
+}
+
+void HammerMesh::bindAndDraw(VkCommandBuffer commandBuffer) {
+    VkBuffer vertexBuffers[] = {vertexBuffer};
+    VkDeviceSize offsets[] = {0};
+    
+    vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+    vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+    vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, 0, 0);
 }
 
 void HammerEngine::createInstance() {
@@ -729,34 +830,62 @@ bool HammerEngine::hasStencilComponent(VkFormat format) {
 }
 
 void HammerEngine::createTextureImage() {
-
     int texWidth, texHeight, texChannels;
+    // Load the image pixels
     stbi_uc* pixels = stbi_load(texturePath, &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
     VkDeviceSize imageSize = texWidth * texHeight * 4;
 
     if (!pixels) {
-        std::cout << "please check if this texture path is correct\n";
-        std::cout << texturePath << "\n";
+        std::cerr << "CRITICAL: Could not find texture at: " << texturePath << std::endl;
         throw std::runtime_error("failed to load texture image!");
     }
 
+    // 1. Create and populate the staging buffer
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
-    createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+    createBuffer(
+        imageSize, 
+        VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
+        stagingBuffer, 
+        stagingBufferMemory
+    );
 
     void* data;
     vkMapMemory(device, stagingBufferMemory, 0, imageSize, 0, &data);
-        memcpy(data, pixels, static_cast<size_t>(imageSize));
+    memcpy(data, pixels, static_cast<size_t>(imageSize));
     vkUnmapMemory(device, stagingBufferMemory);
 
+    // Free the CPU-side pixels as soon as they are in the staging buffer
     stbi_image_free(pixels);
 
-    createImage(texWidth, texHeight, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureImage, textureImageMemory);
+    // 2. Create the actual GPU image
+    createImage(
+        texWidth, 
+        texHeight, 
+        VK_FORMAT_R8G8B8A8_SRGB, 
+        VK_IMAGE_TILING_OPTIMAL, 
+        VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
+        textureImage, 
+        textureImageMemory
+    );
 
+    // 3. Layout Transitions and Data Copy
+    // Transition to receive the data
     transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-        copyBufferToImage(stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
+    
+    // Perform the copy
+    copyBufferToImage(stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
+    
+    // Transition to shader-readable format
     transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
+    // --- CRITICAL ADDITION ---
+    // Wait for the graphics queue to finish the copy before we destroy the source buffer
+    vkQueueWaitIdle(graphicsQueue); 
+
+    // 4. Cleanup Staging Resources
     vkDestroyBuffer(device, stagingBuffer, nullptr);
     vkFreeMemory(device, stagingBufferMemory, nullptr);
 }
@@ -1103,13 +1232,12 @@ void HammerEngine::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t i
 
     vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
-
+        // 1. Set Dynamic States (Viewport/Scissor) once if they don't change per mesh
         VkViewport viewport{};
         viewport.x = 0.0f;
         viewport.y = 0.0f;
-        viewport.width = (float) swapChainExtent.width;
-        viewport.height = (float) swapChainExtent.height;
+        viewport.width = (float)swapChainExtent.width;
+        viewport.height = (float)swapChainExtent.height;
         viewport.minDepth = 0.0f;
         viewport.maxDepth = 1.0f;
         vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
@@ -1119,15 +1247,24 @@ void HammerEngine::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t i
         scissor.extent = swapChainExtent;
         vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-        VkBuffer vertexBuffers[] = {vertexBuffer};
-        VkDeviceSize offsets[] = {0};
-        vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+        // 2. Track the currently bound pipeline to avoid redundant state changes
+        VkPipeline currentlyBoundPipeline = VK_NULL_HANDLE;
 
-        vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+        for (const auto& mesh : meshs) { // mesh is now a unique_ptr reference
+            if (!mesh) continue;
 
-        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
+            HammerPipeline* meshPipeline = mesh->getPipeline();
+            if (meshPipeline->graphicsPipeline != currentlyBoundPipeline) {
+                vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, meshPipeline->graphicsPipeline);
+                currentlyBoundPipeline = meshPipeline->graphicsPipeline;
 
-        vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+                vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 
+                                        meshPipeline->pipelineLayout, 0, 1, 
+                                        &descriptorSets[currentFrame], 0, nullptr);
+            }
+
+            mesh->bindAndDraw(commandBuffer);
+        }
 
     vkCmdEndRenderPass(commandBuffer);
 
@@ -1135,6 +1272,8 @@ void HammerEngine::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t i
         throw std::runtime_error("failed to record command buffer!");
     }
 }
+
+
 
 void HammerEngine::createSyncObjects() {
     imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);

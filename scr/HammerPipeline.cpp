@@ -1,14 +1,32 @@
-#include "../include/HammerEngine/HammerEngine.h"
-#include <iostream>
+#include "../include/HammerEngine/HammerEngine.h" 
+#include <stdexcept>
 
-using namespace std;
+HammerPipeline::HammerPipeline(
+    HammerEngine& engine, 
+    std::string& vertPath, 
+    std::string& fragPath,
+    int renderTriangleMod,
+    bool triangleRender2SideMode) : hammerEngine(engine) {
+    
+    createGraphicsPipeline(vertPath, fragPath, renderTriangleMod, triangleRender2SideMode);
+}
 
-void HammerEngine::createGraphicsPipeline() {
-    auto vertShaderCode = readFile(vertShaderPath);
-    auto fragShaderCode = readFile(fragShaderPath);
+HammerPipeline::~HammerPipeline() {
+    vkDestroyPipeline(hammerEngine.device, graphicsPipeline, nullptr);
+    vkDestroyPipelineLayout(hammerEngine.device, pipelineLayout, nullptr);
+}
 
-    VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
-    VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
+void HammerPipeline::createGraphicsPipeline(
+    std::string& vertPath, 
+    std::string& fragPath,
+    int renderTriangleMod,
+    bool triangleRender2SideMode) {
+
+    auto vertShaderCode = hammerEngine.readFile(vertPath);
+    auto fragShaderCode = hammerEngine.readFile(fragPath);
+
+    VkShaderModule vertShaderModule = hammerEngine.createShaderModule(vertShaderCode);
+    VkShaderModule fragShaderModule = hammerEngine.createShaderModule(fragShaderCode);
 
     VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
     vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -24,27 +42,21 @@ void HammerEngine::createGraphicsPipeline() {
 
     VkPipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageInfo, fragShaderStageInfo};
 
-    VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
-    vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-
+    // Vertex Input
     auto bindingDescription = Vertex::getBindingDescription();
     auto attributeDescriptions = Vertex::getAttributeDescriptions();
 
+    VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
+    vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
     vertexInputInfo.vertexBindingDescriptionCount = 1;
     vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
     vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
     vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 
+    // Input Assembly (Configured via parameters)
     VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
     inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-
-    if (renderTriangleMod == 0)
-    {
-        inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-    } else if(renderTriangleMod == 1){
-        inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_LINE_STRIP;
-    }
-    // VK_PRIMITIVE_TOPOLOGY_LINE_STRIP//VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP
+    inputAssembly.topology = (renderTriangleMod == 1) ? VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST : VK_PRIMITIVE_TOPOLOGY_LINE_STRIP;
     inputAssembly.primitiveRestartEnable = VK_FALSE;
 
     VkPipelineViewportStateCreateInfo viewportState{};
@@ -52,20 +64,14 @@ void HammerEngine::createGraphicsPipeline() {
     viewportState.viewportCount = 1;
     viewportState.scissorCount = 1;
 
+    // Rasterizer (Configured via parameters)
     VkPipelineRasterizationStateCreateInfo rasterizer{};
     rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
     rasterizer.depthClampEnable = VK_FALSE;
     rasterizer.rasterizerDiscardEnable = VK_FALSE;
     rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
     rasterizer.lineWidth = 1.0f;
-
-
-    if(!triangleRender2SideMode){
-        rasterizer.cullMode = VK_CULL_MODE_NONE;
-    } else if (triangleRender2SideMode){
-        rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-    }
-
+    rasterizer.cullMode = triangleRender2SideMode ? VK_CULL_MODE_NONE : VK_CULL_MODE_BACK_BIT;
     rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
     rasterizer.depthBiasEnable = VK_FALSE;
 
@@ -89,18 +95,10 @@ void HammerEngine::createGraphicsPipeline() {
     VkPipelineColorBlendStateCreateInfo colorBlending{};
     colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
     colorBlending.logicOpEnable = VK_FALSE;
-    colorBlending.logicOp = VK_LOGIC_OP_COPY;
     colorBlending.attachmentCount = 1;
     colorBlending.pAttachments = &colorBlendAttachment;
-    colorBlending.blendConstants[0] = 0.0f;
-    colorBlending.blendConstants[1] = 0.0f;
-    colorBlending.blendConstants[2] = 0.0f;
-    colorBlending.blendConstants[3] = 0.0f;
 
-    std::vector<VkDynamicState> dynamicStates = {
-        VK_DYNAMIC_STATE_VIEWPORT,
-        VK_DYNAMIC_STATE_SCISSOR
-    };
+    std::vector<VkDynamicState> dynamicStates = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
     VkPipelineDynamicStateCreateInfo dynamicState{};
     dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
     dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
@@ -109,9 +107,9 @@ void HammerEngine::createGraphicsPipeline() {
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     pipelineLayoutInfo.setLayoutCount = 1;
-    pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
+    pipelineLayoutInfo.pSetLayouts = &hammerEngine.descriptorSetLayout;
 
-    if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
+    if (vkCreatePipelineLayout(hammerEngine.device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
         throw std::runtime_error("failed to create pipeline layout!");
     }
 
@@ -128,14 +126,17 @@ void HammerEngine::createGraphicsPipeline() {
     pipelineInfo.pColorBlendState = &colorBlending;
     pipelineInfo.pDynamicState = &dynamicState;
     pipelineInfo.layout = pipelineLayout;
-    pipelineInfo.renderPass = renderPass;
+    pipelineInfo.renderPass = hammerEngine.renderPass;
     pipelineInfo.subpass = 0;
-    pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-    if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline) != VK_SUCCESS) {
+    if (vkCreateGraphicsPipelines(hammerEngine.device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline) != VK_SUCCESS) {
         throw std::runtime_error("failed to create graphics pipeline!");
     }
 
-    vkDestroyShaderModule(device, fragShaderModule, nullptr);
-    vkDestroyShaderModule(device, vertShaderModule, nullptr);
+    vkDestroyShaderModule(hammerEngine.device, fragShaderModule, nullptr);
+    vkDestroyShaderModule(hammerEngine.device, vertShaderModule, nullptr);
+}
+
+void HammerPipeline::bind(VkCommandBuffer commandBuffer) {
+    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 }
