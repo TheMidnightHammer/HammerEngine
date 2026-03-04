@@ -69,6 +69,11 @@ public:
     void createVertexBuffer(const std::vector<Vertex>& vertices);
     void createIndexBuffer(const std::vector<uint32_t>& indices);
 
+    void updateBuffers(std::vector<Vertex> vertexData, std::vector<uint32_t> indexData);
+
+    VkBuffer stagingBuffer;
+    VkDeviceMemory stagingBufferMemory;
+
     HammerEngine& engine;
     HammerPipeline* pipeline;
 
