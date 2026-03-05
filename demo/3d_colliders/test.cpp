@@ -18,7 +18,7 @@ int main() {
     Engine.WindowWidth = 900;
     Engine.WindowHeight = 900;
     Engine.texturePath = "textures/texture.png";
-    Engine.cameraMode2dOr3d = 0;
+    Engine.mouseLock = 1;
     Engine.cameraSpeed = 0.1f;
     Engine.renderDistance = 64.0f;
     Engine.cameraPosition = glm::vec3(0, 5, 0);

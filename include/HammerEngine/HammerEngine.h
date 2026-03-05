@@ -44,10 +44,6 @@ struct SwapChainSupportDetails {
     std::vector<VkPresentModeKHR> presentModes;
 };
 
-extern std::vector<Vertex> vertices;
-
-extern std::vector<uint32_t> indices;
-
 
 class HammerEngine;
 class HammerPipeline;
@@ -139,28 +135,21 @@ public:
     glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);   // Forward direction
     glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);       // Up direction
 
-    std::string vertShaderPath; // path to shaders
-    std::string fragShaderPath;
-
-    bool triangleRender2SideMode = false; // render both side of triangle
-
     const char *texturePath; // path to texture atlas
 
     std::vector<std::unique_ptr<HammerMesh>> meshs;
 
     GLFWwindow* window; // GLFW window
 
-    int cameraMode2dOr3d; // set camera to 2d or 3d mode
+    void runTest();
 
-    int renderTriangleMod = 0;
+    int mouseLock = 1;
 
     float renderDistance = 512.0f; // how fare the camera can see, bigger the numbre bigger the buffers more memory needed
 
     float cameraFallSpeed = 0.01; // how fast the camera falls in gravaty enabled.
 
     void setMaxVertciesIndicesSize(VkDeviceSize maxsize); // giving the maximume size that the vertcies and incices can go to.
-
-    void runTest(); // running a test.
 
     void cleanup(); // engine clean up.
 
@@ -183,8 +172,6 @@ public:
     void drawFrame(); // function to call a new frame
 
     void updateFrameTimeStart();
-
-    void updateVertexIndexBuffers(); // update the vertex and indices (mesh)
 
     double currentTime = glfwGetTime();
     std::chrono::time_point<std::chrono::high_resolution_clock> start;
