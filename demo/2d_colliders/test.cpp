@@ -19,6 +19,7 @@ int main() {
     Engine.WindowHeight = 1000;
     Engine.texturePath = "textures/texture.png";
     Engine.cameraPosition = glm::vec3(0, 0, 2);
+    Engine.windowName = "Vulkan";
     Engine.mouseLock = 0;
     Engine.cameraSpeed = 0.1f;
     Engine.renderDistance = 16.0f;

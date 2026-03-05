@@ -24,7 +24,7 @@ void HammerEngine::initWindow() {
 
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
-        window = glfwCreateWindow(WindowWidth, WindowHeight, "Vulkan", nullptr, nullptr);
+        window = glfwCreateWindow(WindowWidth, WindowHeight, windowName.c_str(), nullptr, nullptr);
         glfwSetWindowUserPointer(window, this);
         glfwSetFramebufferSizeCallback(window, HammerEngine::framebufferResizeCallback);
 
@@ -35,7 +35,7 @@ void HammerEngine::initWindow() {
 
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
-        window = glfwCreateWindow(WindowWidth, WindowHeight, "Vulkan", nullptr, nullptr);
+        window = glfwCreateWindow(WindowWidth, WindowHeight, windowName.c_str(), nullptr, nullptr);
         glfwSetWindowUserPointer(window, this);
         glfwSetFramebufferSizeCallback(window, HammerEngine::framebufferResizeCallback);
 

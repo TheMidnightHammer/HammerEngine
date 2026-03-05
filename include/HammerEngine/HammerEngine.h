@@ -141,6 +141,8 @@ public:
 
     GLFWwindow* window; // GLFW window
 
+    std::string windowName = "Hammer Engine";
+
     void runTest();
 
     int mouseLock = 1;

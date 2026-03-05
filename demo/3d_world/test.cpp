@@ -89,6 +89,7 @@ int main() {
     Engine.WindowHeight = 900;
     Engine.texturePath = "textures/texture.png";
     Engine.mouseLock = 1; 
+    Engine.windowName = "Vulkan";
     Engine.renderDistance = 1000.0f;
     Engine.cameraSpeed = 1.0f;
 

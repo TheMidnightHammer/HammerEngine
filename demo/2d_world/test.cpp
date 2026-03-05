@@ -16,6 +16,7 @@ int main() {
     Engine.enableValidationLayers = true;
     Engine.WindowWidth = 1000;
     Engine.WindowHeight = 1000;
+    Engine.windowName = "Vulkan";
     Engine.texturePath = "textures/texture.png";
     Engine.mouseLock = 0;
     Engine.cameraSpeed = 0.1f;
