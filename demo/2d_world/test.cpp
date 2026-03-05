@@ -17,7 +17,7 @@ int main() {
     Engine.WindowWidth = 1000;
     Engine.WindowHeight = 1000;
     Engine.texturePath = "textures/texture.png";
-    Engine.cameraMode2dOr3d = 1; // Set to 1 for 2D mode if your engine uses this flag
+    Engine.mouseLock = 0;
     Engine.cameraSpeed = 0.1f;
     Engine.renderDistance = 16.0f;
 

@@ -106,63 +106,6 @@ struct UniformBufferObject {
     alignas(16) glm::mat4 proj;
 };
 
-std::vector<Vertex> vertices;// = {
-//     // Front (tile 0,0)
-//     {{-0.5f,-0.5f, 0.5f},{1.0f,0.0f,0.0f},{0.0000f,0.0625f}},
-//     {{ 0.5f,-0.5f, 0.5f},{0.0f,1.0f,0.0f},{0.0625f,0.0625f}},
-//     {{ 0.5f, 0.5f, 0.5f},{0.0f,0.0f,1.0f},{0.0625f,0.0000f}},
-//     {{-0.5f, 0.5f, 0.5f},{1.0f,1.0f,0.0f},{0.0000f,0.0000f}},
-
-//     // Back (tile 0,0)
-//     {{-0.5f,-0.5f,-0.5f},{1.0f,0.0f,1.0f},{0.0000f,0.0625f}},
-//     {{ 0.5f,-0.5f,-0.5f},{0.0f,1.0f,1.0f},{0.0625f,0.0625f}},
-//     {{ 0.5f, 0.5f,-0.5f},{0.5f,0.5f,0.5f},{0.0625f,0.0000f}},
-//     {{-0.5f, 0.5f,-0.5f},{0.0f,0.0f,0.0f},{0.0000f,0.0000f}},
-
-//     // Top (tile 2,0)
-//     {{-0.5f, 0.5f,-0.5f},{1.0f,0.0f,0.0f},{0.1250f,0.0625f}},
-//     {{ 0.5f, 0.5f,-0.5f},{0.0f,1.0f,0.0f},{0.1875f,0.0625f}},
-//     {{ 0.5f, 0.5f, 0.5f},{0.0f,0.0f,1.0f},{0.1875f,0.0000f}},
-//     {{-0.5f, 0.5f, 0.5f},{1.0f,1.0f,0.0f},{0.1250f,0.0000f}},
-
-//     // Bottom (tile 1,0)
-//     {{-0.5f,-0.5f,-0.5f},{1.0f,0.0f,1.0f},{0.0625f,0.0625f}},
-//     {{ 0.5f,-0.5f,-0.5f},{0.0f,1.0f,1.0f},{0.1250f,0.0625f}},
-//     {{ 0.5f,-0.5f, 0.5f},{0.5f,0.5f,0.5f},{0.1250f,0.0000f}},
-//     {{-0.5f,-0.5f, 0.5f},{0.0f,0.0f,0.0f},{0.0625f,0.0000f}},
-
-//     // Right (tile 0,0)
-//     {{ 0.5f,-0.5f,-0.5f},{1.0f,0.5f,0.0f},{0.0625f,0.0625f}},
-//     {{ 0.5f, 0.5f,-0.5f},{0.5f,1.0f,0.0f},{0.0625f,0.0000f}},
-//     {{ 0.5f, 0.5f, 0.5f},{0.0f,1.0f,0.5f},{0.0000f,0.0000f}},
-//     {{ 0.5f,-0.5f, 0.5f},{0.5f,0.0f,1.0f},{0.0000f,0.0625f}},
-
-//     // Left (tile 0,0)
-//     {{-0.5f,-0.5f,-0.5f},{0.5f,0.0f,0.5f},{0.0625f,0.0625f}},
-//     {{-0.5f, 0.5f,-0.5f},{0.5f,0.5f,0.0f},{0.0625f,0.0000f}},
-//     {{-0.5f, 0.5f, 0.5f},{0.0f,0.5f,0.5f},{0.0000f,0.0000f}},
-//     {{-0.5f,-0.5f, 0.5f},{0.0f,0.0f,0.5f},{0.0000f,0.0625f}}
-// };
-
- std::vector<uint32_t> indices;// = {
-//     // Front face
-//     0, 1, 2, 2, 3, 0,
-//     // Back face
-//     4, 5, 6, 6, 7, 4,
-//     // Top face
-//     8, 9, 10, 10, 11, 8,
-//     // Bottom face
-//     12, 13, 14, 14, 15, 12,
-//     // Right face
-//     16, 17, 18, 18, 19, 16,
-//     // Left face
-//     20, 21, 22, 22, 23, 20
-// };
-
-// HammerEngine::HammerEngine(){
-
-// }
-
 void HammerEngine::framebufferResizeCallback(GLFWwindow* window, int width, int height) {
     auto app = reinterpret_cast<HammerEngine*>(glfwGetWindowUserPointer(window));
     app->framebufferResized = true;
@@ -822,7 +765,6 @@ void HammerEngine::createTextureImage() {
         throw std::runtime_error("failed to load texture image!");
     }
 
-    // 1. Create and populate the staging buffer
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
     createBuffer(
@@ -838,10 +780,8 @@ void HammerEngine::createTextureImage() {
     memcpy(data, pixels, static_cast<size_t>(imageSize));
     vkUnmapMemory(device, stagingBufferMemory);
 
-    // Free the CPU-side pixels as soon as they are in the staging buffer
     stbi_image_free(pixels);
 
-    // 2. Create the actual GPU image
     createImage(
         texWidth, 
         texHeight, 
@@ -853,21 +793,14 @@ void HammerEngine::createTextureImage() {
         textureImageMemory
     );
 
-    // 3. Layout Transitions and Data Copy
-    // Transition to receive the data
     transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
     
-    // Perform the copy
     copyBufferToImage(stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
     
-    // Transition to shader-readable format
     transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-    // --- CRITICAL ADDITION ---
-    // Wait for the graphics queue to finish the copy before we destroy the source buffer
     vkQueueWaitIdle(graphicsQueue); 
 
-    // 4. Cleanup Staging Resources
     vkDestroyBuffer(device, stagingBuffer, nullptr);
     vkFreeMemory(device, stagingBufferMemory, nullptr);
 }
@@ -1149,20 +1082,6 @@ void HammerEngine::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSi
     endSingleTimeCommands(commandBuffer);
 }
 
-// void HammerEngine::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {
-//     VkCommandBuffer cmd = beginSingleTimeCommands();
-
-//     const VkBufferCopy region{
-//         .srcOffset = 0,
-//         .dstOffset = 0,
-//         .size = size,
-//     };
-
-//     vkCmdCopyBuffer(cmd, srcBuffer, dstBuffer, 1, &region);
-
-//     endSingleTimeCommands(cmd);
-// }
-
 uint32_t HammerEngine::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
     VkPhysicalDeviceMemoryProperties memProperties;
     vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
@@ -1297,8 +1216,6 @@ void HammerEngine::updateUniformBuffer(uint32_t currentImage) {
 }
 
 void HammerEngine::drawFrame() {
-    // Wait only if this frame is already in use
-    // (i.e., meaning GPU hasn’t finished processing it yet)
     vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
     uint32_t imageIndex;
@@ -1318,25 +1235,19 @@ void HammerEngine::drawFrame() {
         throw std::runtime_error("failed to acquire swap chain image!");
     }
 
-    // If the image is already being used by another frame, wait for its fence
     if (imagesInFlight[imageIndex] != VK_NULL_HANDLE) {
         vkWaitForFences(device, 1, &imagesInFlight[imageIndex], VK_TRUE, UINT64_MAX);
     }
 
-    // Mark this image as now being in flight with current frame’s fence
     imagesInFlight[imageIndex] = inFlightFences[currentFrame];
 
-    // Update UBO only after image acquired
     updateUniformBuffer(currentFrame);
 
-    // Reset the fence *before* queue submission
     vkResetFences(device, 1, &inFlightFences[currentFrame]);
 
-    // Re-record this frame’s command buffer
     vkResetCommandBuffer(commandBuffers[currentFrame], 0);
     recordCommandBuffer(commandBuffers[currentFrame], imageIndex);
 
-    // ---- Submit ----
     VkSemaphore waitSemaphores[] = { imageAvailableSemaphores[currentFrame] };
     VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 
@@ -1374,73 +1285,8 @@ void HammerEngine::drawFrame() {
         throw std::runtime_error("failed to present swap chain image!");
     }
 
-    // Advance to next frame in flight
     currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
-
-// void HammerEngine::drawFrame() {
-//     vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
-
-//     uint32_t imageIndex;
-//     VkResult result = vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
-
-//     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-//         recreateSwapChain();
-//         return;
-//     } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
-//         throw std::runtime_error("failed to acquire swap chain image!");
-//     }
-
-//     updateUniformBuffer(currentFrame);
-
-//     vkResetFences(device, 1, &inFlightFences[currentFrame]);
-
-//     vkResetCommandBuffer(commandBuffers[currentFrame], /*VkCommandBufferResetFlagBits*/ 0);
-//     recordCommandBuffer(commandBuffers[currentFrame], imageIndex);
-
-//     VkSubmitInfo submitInfo{};
-//     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-
-//     VkSemaphore waitSemaphores[] = {imageAvailableSemaphores[currentFrame]};
-//     VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-//     submitInfo.waitSemaphoreCount = 1;
-//     submitInfo.pWaitSemaphores = waitSemaphores;
-//     submitInfo.pWaitDstStageMask = waitStages;
-
-//     submitInfo.commandBufferCount = 1;
-//     submitInfo.pCommandBuffers = &commandBuffers[currentFrame];
-
-//     VkSemaphore signalSemaphores[] = {renderFinishedSemaphores[currentFrame]};
-//     submitInfo.signalSemaphoreCount = 1;
-//     submitInfo.pSignalSemaphores = signalSemaphores;
-
-//     if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFences[currentFrame]) != VK_SUCCESS) {
-//         throw std::runtime_error("failed to submit draw command buffer!");
-//     }
-
-//     VkPresentInfoKHR presentInfo{};
-//     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-
-//     presentInfo.waitSemaphoreCount = 1;
-//     presentInfo.pWaitSemaphores = signalSemaphores;
-
-//     VkSwapchainKHR swapChains[] = {swapChain};
-//     presentInfo.swapchainCount = 1;
-//     presentInfo.pSwapchains = swapChains;
-
-//     presentInfo.pImageIndices = &imageIndex;
-
-//     result = vkQueuePresentKHR(presentQueue, &presentInfo);
-
-//     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized) {
-//         framebufferResized = false;
-//         recreateSwapChain();
-//     } else if (result != VK_SUCCESS) {
-//         throw std::runtime_error("failed to present swap chain image!");
-//     }
-
-//     currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
-// }
 
 VkShaderModule HammerEngine::createShaderModule(const std::vector<char>& code) {
     VkShaderModuleCreateInfo createInfo{};
@@ -1649,16 +1495,3 @@ VKAPI_ATTR VkBool32 VKAPI_CALL HammerEngine::debugCallback(VkDebugUtilsMessageSe
 
     return VK_FALSE;
 }
-
-// int main() {
-//     HammerEngine app;
-
-//     try {
-//         app.runTest();
-//     } catch (const std::exception& e) {
-//         std::cerr << e.what() << std::endl;
-//         return EXIT_FAILURE;
-//     }
-
-//     return EXIT_SUCCESS;
-// }

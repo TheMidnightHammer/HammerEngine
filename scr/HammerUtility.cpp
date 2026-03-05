@@ -19,7 +19,7 @@ void HammerEngine::runTest() {
 
 void HammerEngine::initWindow() {
 
-    if(renderTriangleMod == 1){
+    if(mouseLock == 1){
         glfwInit();
 
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
@@ -30,7 +30,7 @@ void HammerEngine::initWindow() {
 
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
         glfwMakeContextCurrent(window);
-    } else if(renderTriangleMod == 0){
+    } else if(mouseLock == 0){
         glfwInit();
 
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
@@ -87,8 +87,8 @@ void HammerEngine::drawPassStart(){
 
     std::chrono::milliseconds totalFrameTime(0);
 
-    vertexBufferSize = sizeof(Vertex) * vertices.size();
-    indexBufferSize = sizeof(uint32_t) * indices.size();
+    //vertexBufferSize = sizeof(Vertex) * vertices.size();
+    //indexBufferSize = sizeof(uint32_t) * indices.size();
 }
 
 void HammerEngine::updateFrameTimeStart(){

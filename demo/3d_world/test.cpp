@@ -88,7 +88,7 @@ int main() {
     Engine.WindowWidth = 1200;
     Engine.WindowHeight = 900;
     Engine.texturePath = "textures/texture.png";
-    Engine.cameraMode2dOr3d = 0; 
+    Engine.mouseLock = 1; 
     Engine.renderDistance = 1000.0f;
     Engine.cameraSpeed = 1.0f;
 
