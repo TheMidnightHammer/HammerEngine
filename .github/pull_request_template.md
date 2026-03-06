@@ -1,4 +1,4 @@
-# 🛠️ Hammer Engine Pull Request
+# Hammer Engine Pull Request
 
 ## # How does this benefit Hammer Engine?
 ## # Was this requested?
@@ -10,6 +10,9 @@
 ## # What new does it bring?
 1. **Feature Name**: Description...
 2. **Feature Name**: Description...
+## # Did you update the demos?
+1. Do they still work?
+2. Do they work as expected?
 
 ---
 *By submitting this PR, I ensure that the code follows the project's contribution guidelines.*
