@@ -27,38 +27,12 @@ The official tutorial is at docs/
 
 ## Linux
 
-1. To build Hammer Engine you will need to install vulkan, vulkan validation layers, spirv tools, stb, and glm.
+1. Run the build.sh
+`./build.sh`
 
-`sudo apt-get install libvulkan-dev vulkan-tools vulkan-validationlayers spirv-tools libstb-dev libglm-dev libglfw3-dev
-`
+2. The build will ask which demo you want to run you can put the path to any demo in the demo folder.
 
-2. Test your vulkan install
-
-`vkcube`
-
-3. You will need to clone the latest version of Hammer Engine
-
-`git clone https://github.com/MidnightHammer-code/HammerEngine.git`
-
-4. Go in the HammerEngine/demo/3d_world folder or any other demo
-
-`cd HammerEngine/demo/3d_world/`
-
-5. Make a folder called build and go in the build folder
-
-`mkdir build && cd build`
-
-6. Run Cmake and make to prepare the build and build it using all available cores
-
-`cmake .. && make -j <core count>`
-
-7. Move the executable to the main demo folder and go to the main demo folder
-
-`mv voxel_Engine .. && cd ..`
-
-8. Run the test
-
-`./voxel_Engine`
+3. Run the demo and enjoy.
 
 ## Windows & macOS
 
