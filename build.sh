@@ -95,5 +95,6 @@ cmake ..
 
 echo "----BUILDING----"
 make -j "$(nproc)"
+mv voxel_Engine ../voxel_Engine
 
 echo "----DONE----"
