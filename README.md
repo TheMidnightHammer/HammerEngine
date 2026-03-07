@@ -43,9 +43,9 @@ We are looking for contributors! If you want to contribute to Hammer go to the i
 
 1. Optimizing the Engine even more for low-end machines.
 2. Extended physics/collision features.
-3. Separate the functions from HammerEngine.cpp into separate files.
+3. Separating the functions from HammerEngine.cpp into separate files.
 4. Add documentation, to help people learn Hammer Engine.
 
 # How to use?
 
-The Hammer Engine tutorial is being made right now and should be finished very sone you can find it at https://github.com/MidnightHammer-code/HammerEngine/tree/main/docs.
+The Hammer Engine tutorial is being made right now and should be finished very soon. you can find it at https://github.com/MidnightHammer-code/HammerEngine/tree/main/docs.
