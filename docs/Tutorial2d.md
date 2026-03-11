@@ -45,3 +45,16 @@ If you are building a app that you need to have the controle over the mouse curs
 If mouse lock it set to 0 the mouse will be free to move, if it 1 the mouse can not longer move.
 
 `Engine.mouseLock = 0;`
+
+
+
+
+
+layout(push_constant) uniform constants {
+    vec3 position;
+} MeshData;
+
+void main() {
+    // Add the global position to the vertex position
+    // gl_Position = ubo.projection * ubo.view * vec4(inPosition + MeshData.position, 1.0);
+}
