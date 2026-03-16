@@ -116,10 +116,15 @@ void HammerPipeline::createGraphicsPipeline(
     pushConstantRange.offset = 0;
     pushConstantRange.size = sizeof(glm::mat4);
 
+    std::array<VkDescriptorSetLayout, 2> setLayouts = {
+        hammerEngine.globalSetLayout, 
+        hammerEngine.textureSetLayout
+    };
+
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = 1;
-    pipelineLayoutInfo.pSetLayouts = &hammerEngine.descriptorSetLayout;
+    pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(setLayouts.size()); // Should be 2
+    pipelineLayoutInfo.pSetLayouts = setLayouts.data();
 
     pipelineLayoutInfo.pushConstantRangeCount = 1;
     pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;

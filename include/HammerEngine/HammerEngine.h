@@ -53,9 +53,44 @@ struct SwapChainSupportDetails {
 class HammerEngine;
 class HammerPipeline;
 
+enum class HammerTextureFilter {
+    Nearest,
+    Linear
+};
+
+class HammerTexture {
+public:
+    HammerTexture(HammerEngine& engine, const std::string& path, HammerTextureFilter filter);
+    ~HammerTexture();
+
+    // Disable copying
+    HammerTexture(const HammerTexture&) = delete;
+    HammerTexture& operator=(const HammerTexture&) = delete;
+
+    // Vulkan resources specific to this texture
+    VkImage image = VK_NULL_HANDLE;
+    VkDeviceMemory imageMemory = VK_NULL_HANDLE;
+    VkImageView imageView = VK_NULL_HANDLE;
+    VkSampler sampler = VK_NULL_HANDLE;
+
+    // The descriptor set used to bind this specific texture in the shader
+    VkDescriptorSet descriptorSet = VK_NULL_HANDLE; 
+
+    HammerEngine& engine;
+
+private:
+    void createTextureImage(const std::string& path);
+    void createTextureImageView();
+    void createTextureSampler(HammerTextureFilter filter);
+    void allocateDescriptorSet(); 
+};
+
 class HammerMesh {
 public:
-    HammerMesh(HammerEngine& engine, HammerPipeline* pipeline, 
+    // UPDATE: Added HammerTexture* to the constructor
+    HammerMesh(HammerEngine& engine, 
+               HammerPipeline* pipeline, 
+               HammerTexture* texture, 
                const std::vector<Vertex>& vertices, 
                const std::vector<uint32_t>& indices);
     
@@ -66,16 +101,16 @@ public:
     glm::vec3 scale    = glm::vec3(1.0f);
 
     std::vector<Vertex> vertexData;
-
     std::vector<uint32_t> indexData;
 
-    // Disable copying to prevent double-free of Vulkan resources
     HammerMesh(const HammerMesh&) = delete;
     HammerMesh& operator=(const HammerMesh&) = delete;
 
-    void bindAndDraw(VkCommandBuffer commandBuffer);
+    void bindAndDraw(VkCommandBuffer commandBuffer, uint32_t currentFrame);
     
     HammerPipeline* getPipeline() const { return pipeline; }
+    HammerTexture* getTexture() const { return texture; }
+    
 
     void createVertexBuffer(const std::vector<Vertex>& vertices);
     void createIndexBuffer(const std::vector<uint32_t>& indices);
@@ -87,6 +122,7 @@ public:
 
     HammerEngine& engine;
     HammerPipeline* pipeline;
+    HammerTexture* texture;
 
     VkBuffer vertexBuffer = VK_NULL_HANDLE;
     VkDeviceMemory vertexBufferMemory = VK_NULL_HANDLE;
@@ -144,9 +180,9 @@ public:
     glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);   // Forward direction
     glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);       // Up direction
 
-    const char *texturePath; // path to texture atlas
-
     std::vector<std::unique_ptr<HammerMesh>> meshs;
+
+    int MaxTextures = 1000;
 
     GLFWwindow* window; // GLFW window
 
@@ -211,7 +247,9 @@ public:
 	std::vector<VkFramebuffer> swapChainFramebuffers;
 
 	VkRenderPass renderPass;
-	VkDescriptorSetLayout descriptorSetLayout;
+	VkDescriptorSetLayout globalSetLayout; 
+    VkDescriptorSetLayout textureSetLayout;
+    std::vector<VkDescriptorSet> globalDescriptorSets;
 	VkPipelineLayout pipelineLayout;
 	VkPipeline graphicsPipeline;
 

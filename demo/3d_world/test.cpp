@@ -84,9 +84,9 @@ int main() {
     Engine.enableValidationLayers = true;
     Engine.WindowWidth = 1200;
     Engine.WindowHeight = 900;
-    Engine.texturePath = "textures/texture.png";
+    Engine.MaxTextures = 1000;
     Engine.mouseLock = 1; 
-    Engine.windowName = "Vulkan";
+    Engine.windowName = "Hammer Engine - Multi Texture";
     Engine.renderDistance = 1000.0f;
     Engine.cameraSpeed = 1.0f;
 
@@ -100,14 +100,14 @@ int main() {
     std::string fPath = "shaders/frag.spv";
     auto mainPipeline = std::make_unique<HammerPipeline>(Engine, vPath, fPath, 1, true);
 
+    auto dirtTexture  = std::make_unique<HammerTexture>(Engine, "textures/texture.png", HammerTextureFilter::Nearest);
+
     std::vector<Vertex> vertices;
     std::vector<uint32_t> indices;
-    
     generateCubeGrid(vertices, indices, 10, 10, 10);
 
-    auto myMesh = std::make_unique<HammerMesh>(Engine, mainPipeline.get(), vertices, indices);
+    auto myMesh = std::make_unique<HammerMesh>(Engine, mainPipeline.get(), dirtTexture.get(), vertices, indices);
     
-    HammerMesh* meshPtr = myMesh.get();
     Engine.meshs.push_back(std::move(myMesh));
 
     Engine.drawPassStart();
@@ -115,10 +115,14 @@ int main() {
         Engine.updateFrameTimeStart();
 
         Engine.updateCameraDefault3D();
+        
         Engine.drawFrame(); 
+        
         Engine.updateFrameTimeEnd();
     }
     Engine.drawPassEnd();
+
+    dirtTexture.reset();
 
     return EXIT_SUCCESS;
 }
