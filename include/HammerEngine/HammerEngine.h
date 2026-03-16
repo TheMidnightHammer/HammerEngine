@@ -180,9 +180,9 @@ public:
     glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);   // Forward direction
     glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);       // Up direction
 
-    const char *texturePath; // path to texture atlas
-
     std::vector<std::unique_ptr<HammerMesh>> meshs;
+
+    int MaxTextures = 1000;
 
     GLFWwindow* window; // GLFW window
 

@@ -824,84 +824,84 @@ bool HammerEngine::hasStencilComponent(VkFormat format) {
     return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
 }
 
-void HammerEngine::createTextureImage() {
-    int texWidth, texHeight, texChannels;
-    // Load the image pixels
-    stbi_uc* pixels = stbi_load(texturePath, &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
-    VkDeviceSize imageSize = texWidth * texHeight * 4;
+// void HammerEngine::createTextureImage() {
+//     int texWidth, texHeight, texChannels;
+//     // Load the image pixels
+//     stbi_uc* pixels = stbi_load(texturePath, &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+//     VkDeviceSize imageSize = texWidth * texHeight * 4;
 
-    if (!pixels) {
-        std::cerr << "CRITICAL: Could not find texture at: " << texturePath << std::endl;
-        throw std::runtime_error("failed to load texture image!");
-    }
+//     if (!pixels) {
+//         std::cerr << "CRITICAL: Could not find texture at: " << texturePath << std::endl;
+//         throw std::runtime_error("failed to load texture image!");
+//     }
 
-    VkBuffer stagingBuffer;
-    VkDeviceMemory stagingBufferMemory;
-    createBuffer(
-        imageSize, 
-        VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
-        stagingBuffer, 
-        stagingBufferMemory
-    );
+//     VkBuffer stagingBuffer;
+//     VkDeviceMemory stagingBufferMemory;
+//     createBuffer(
+//         imageSize, 
+//         VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
+//         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
+//         stagingBuffer, 
+//         stagingBufferMemory
+//     );
 
-    void* data;
-    vkMapMemory(device, stagingBufferMemory, 0, imageSize, 0, &data);
-    memcpy(data, pixels, static_cast<size_t>(imageSize));
-    vkUnmapMemory(device, stagingBufferMemory);
+//     void* data;
+//     vkMapMemory(device, stagingBufferMemory, 0, imageSize, 0, &data);
+//     memcpy(data, pixels, static_cast<size_t>(imageSize));
+//     vkUnmapMemory(device, stagingBufferMemory);
 
-    stbi_image_free(pixels);
+//     stbi_image_free(pixels);
 
-    createImage(
-        texWidth, 
-        texHeight, 
-        VK_FORMAT_R8G8B8A8_SRGB, 
-        VK_IMAGE_TILING_OPTIMAL, 
-        VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 
-        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
-        textureImage, 
-        textureImageMemory
-    );
+//     createImage(
+//         texWidth, 
+//         texHeight, 
+//         VK_FORMAT_R8G8B8A8_SRGB, 
+//         VK_IMAGE_TILING_OPTIMAL, 
+//         VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 
+//         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
+//         textureImage, 
+//         textureImageMemory
+//     );
 
-    transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+//     transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
     
-    copyBufferToImage(stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
+//     copyBufferToImage(stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
     
-    transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+//     transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-    vkQueueWaitIdle(graphicsQueue); 
+//     vkQueueWaitIdle(graphicsQueue); 
 
-    vkDestroyBuffer(device, stagingBuffer, nullptr);
-    vkFreeMemory(device, stagingBufferMemory, nullptr);
-}
+//     vkDestroyBuffer(device, stagingBuffer, nullptr);
+//     vkFreeMemory(device, stagingBufferMemory, nullptr);
+// }
 
-void HammerEngine::createTextureImageView() {
-    textureImageView = createImageView(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT);
-}
+// void HammerEngine::createTextureImageView() {
+//     textureImageView = createImageView(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT);
+// }
 
-void HammerEngine::createTextureSampler() {
-    VkPhysicalDeviceProperties properties{};
-    vkGetPhysicalDeviceProperties(physicalDevice, &properties);
+// void HammerEngine::createTextureSampler() {
+//     VkPhysicalDeviceProperties properties{};
+//     vkGetPhysicalDeviceProperties(physicalDevice, &properties);
 
-    VkSamplerCreateInfo samplerInfo{};
-    samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-    samplerInfo.magFilter = VK_FILTER_NEAREST;
-    samplerInfo.minFilter = VK_FILTER_NEAREST;
-    samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-    samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-    samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-    samplerInfo.anisotropyEnable = VK_TRUE;
-    samplerInfo.maxAnisotropy = properties.limits.maxSamplerAnisotropy;
-    samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-    samplerInfo.unnormalizedCoordinates = VK_FALSE;
-    samplerInfo.compareEnable = VK_FALSE;
-    samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
-    samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+//     VkSamplerCreateInfo samplerInfo{};
+//     samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+//     samplerInfo.magFilter = VK_FILTER_NEAREST;
+//     samplerInfo.minFilter = VK_FILTER_NEAREST;
+//     samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+//     samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+//     samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+//     samplerInfo.anisotropyEnable = VK_TRUE;
+//     samplerInfo.maxAnisotropy = properties.limits.maxSamplerAnisotropy;
+//     samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+//     samplerInfo.unnormalizedCoordinates = VK_FALSE;
+//     samplerInfo.compareEnable = VK_FALSE;
+//     samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+//     samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
 
-    if (vkCreateSampler(device, &samplerInfo, nullptr, &textureSampler) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create texture sampler!");
-    }
-}
+//     if (vkCreateSampler(device, &samplerInfo, nullptr, &textureSampler) != VK_SUCCESS) {
+//         throw std::runtime_error("failed to create texture sampler!");
+//     }
+// }
 
 VkImageView HammerEngine::createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags) {
     VkImageViewCreateInfo viewInfo{};
@@ -1155,21 +1155,27 @@ void HammerEngine::createUniformBuffers() {
 }
 
 void HammerEngine::createDescriptorPool() {
+    // 1. Define the capacity for each descriptor type
     std::array<VkDescriptorPoolSize, 2> poolSizes{};
-    poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    poolSizes[0].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
     
-    // Make room for plenty of textures (e.g., 1000)
+    // Uniform Buffers: Usually 1 per frame in flight for global data
+    poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    poolSizes[0].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) * 10; // Extra padding
+    
+    // Combined Image Samplers: 1 per texture you plan to load
     poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     poolSizes[1].descriptorCount = 1000; 
 
+    // 2. Define the total number of SETS that can be allocated
     VkDescriptorPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
     poolInfo.pPoolSizes = poolSizes.data();
-    // Allow freeing individual sets if you want to delete textures later
+    
+    poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) + MaxTextures;
+    
+    // Allows us to call vkFreeDescriptorSets in the HammerTexture destructor
     poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT; 
-    poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) + 1000;
 
     if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
         throw std::runtime_error("failed to create descriptor pool!");
@@ -1356,9 +1362,16 @@ void HammerEngine::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t i
                 vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, meshPipeline->graphicsPipeline);
                 currentlyBoundPipeline = meshPipeline->graphicsPipeline;
 
-                vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 
-                                        meshPipeline->pipelineLayout, 0, 1, 
-                                        &descriptorSets[currentFrame], 0, nullptr);
+                vkCmdBindDescriptorSets(
+                    commandBuffer, 
+                    VK_PIPELINE_BIND_POINT_GRAPHICS,  
+                    meshPipeline->pipelineLayout, 
+                    1,              // Set index 1 (Texture)
+                    1,              // Binding 1 descriptor set
+                    &mesh->texture->descriptorSet, // Pass the address of the single handle
+                    0, 
+                    nullptr
+                );
             }
 
             mesh->bindAndDraw(commandBuffer, currentFrame);
@@ -1402,7 +1415,6 @@ void HammerEngine::updateUniformBuffer(uint32_t currentImage) {
 
     UniformBufferObject ubo{};
     ubo.model = glm::mat4(1.0f);
-    //ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
     ubo.proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float) swapChainExtent.height, 0.1f, renderDistance);
     ubo.proj[1][1] *= -1;
 

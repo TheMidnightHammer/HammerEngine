@@ -16,8 +16,8 @@ int main() {
     Engine.enableValidationLayers = true;
     Engine.WindowWidth = 900;
     Engine.WindowHeight = 900;
-    Engine.texturePath = "textures/texture.png";
-    Engine.windowName = "Vulkan";
+    Engine.MaxTextures = 1000; // Important for your Descriptor Pool size
+    Engine.windowName = "Hammer Engine - Collision Demo";
     Engine.mouseLock = 1;
     Engine.cameraSpeed = 0.1f;
     Engine.renderDistance = 64.0f;
@@ -26,6 +26,11 @@ int main() {
     Engine.initWindow();
     Engine.initVulkan();
 
+    // 1. Load the Texture explicitly
+    // This creates the VkImage, ImageView, Sampler, and DescriptorSet internally.
+    auto mainTexture = std::make_unique<HammerTexture>(Engine, "textures/texture.png", HammerTextureFilter::Nearest);
+
+    // ... (localVertices and localIndices remain the same) ...
     std::vector<Vertex> localVertices = {
         // Front (tile 0,0)
         {{-0.5f,-0.5f, 0.5f},{1.0f,0.0f,0.0f},{0.0000f,0.0625f}},
@@ -73,16 +78,17 @@ int main() {
         20, 21, 22, 22, 23, 20  // Left
     };
 
+    // 2. Setup Pipeline
     std::string vPath = "shaders/vert.spv";
     std::string fPath = "shaders/frag.spv";
-    
-    auto mainPipeline = std::make_unique<HammerPipeline>(
-        Engine, vPath, fPath, 1, true
-    );
+    auto mainPipeline = std::make_unique<HammerPipeline>(Engine, vPath, fPath, 1, true);
 
+    // 3. Create Mesh using the Texture
+    // Pass mainTexture.get() as the third argument
     Engine.meshs.push_back(std::make_unique<HammerMesh>(
         Engine, 
         mainPipeline.get(), 
+        mainTexture.get(), 
         localVertices, 
         localIndices
     ));
@@ -91,6 +97,7 @@ int main() {
     while (!glfwWindowShouldClose(Engine.window)) {
         Engine.updateFrameTimeStart();
 
+        // Collision logic
         HammerRectCubeF cube{0, 0, 0, 1, 1, 1};
         HammerRectCubeF camera{
             Engine.cameraPosition.x,
@@ -108,6 +115,10 @@ int main() {
         Engine.updateFrameTimeEnd();
     }
     Engine.drawPassEnd();
+
+    // 4. Manual Cleanup (using .reset() to destroy Vulkan resources safely)
+    mainTexture.reset(); 
+    mainPipeline.reset();
 
     return EXIT_SUCCESS;
 }
