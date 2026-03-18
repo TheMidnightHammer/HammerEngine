@@ -12,14 +12,18 @@
 #include <glm/glm.hpp>
 #include <memory>
 #include <optional>
+#include <stdexcept>
 #include <string>
 #include <vector>
 #include <vulkan/vulkan.h>
 #include <array>
 #include <GLFW/glfw3.h>
-
+#include <unordered_map>
+#include <glm/gtx/hash.hpp>
 #include <cstdint>
 #include <vulkan/vulkan_core.h>
+
+#include "../../lib/tiny_obj_loader.h"
 
 
 
@@ -27,6 +31,10 @@ struct Vertex {
     glm::vec3 pos;
     glm::vec3 color;
     glm::vec2 texCoord;
+
+    bool operator==(const Vertex& other) const {
+        return pos == other.pos && color == other.color && texCoord == other.texCoord;
+    }
 
     static VkVertexInputBindingDescription getBindingDescription();
     static std::array<VkVertexInputAttributeDescription, 3> getAttributeDescriptions();
@@ -53,6 +61,25 @@ struct SwapChainSupportDetails {
 class HammerEngine;
 class HammerPipeline;
 
+namespace std {
+    template<> struct hash<Vertex> {
+        size_t operator()(Vertex const& vertex) const {
+            return ((hash<glm::vec3>()(vertex.pos) ^
+                   (hash<glm::vec3>()(vertex.color) << 1)) >> 1) ^
+                   (hash<glm::vec2>()(vertex.texCoord) << 1);
+        }
+    };
+}
+
+class HammerModel {
+public:
+    std::vector<Vertex> vertexData;
+    std::vector<uint32_t> indexData;
+
+    HammerModel(const std::string& path);
+};
+
+
 enum class HammerTextureFilter {
     Nearest,
     Linear
@@ -63,17 +90,14 @@ public:
     HammerTexture(HammerEngine& engine, const std::string& path, HammerTextureFilter filter);
     ~HammerTexture();
 
-    // Disable copying
     HammerTexture(const HammerTexture&) = delete;
     HammerTexture& operator=(const HammerTexture&) = delete;
 
-    // Vulkan resources specific to this texture
     VkImage image = VK_NULL_HANDLE;
     VkDeviceMemory imageMemory = VK_NULL_HANDLE;
     VkImageView imageView = VK_NULL_HANDLE;
     VkSampler sampler = VK_NULL_HANDLE;
 
-    // The descriptor set used to bind this specific texture in the shader
     VkDescriptorSet descriptorSet = VK_NULL_HANDLE; 
 
     HammerEngine& engine;
@@ -87,7 +111,6 @@ private:
 
 class HammerMesh {
 public:
-    // UPDATE: Added HammerTexture* to the constructor
     HammerMesh(HammerEngine& engine, 
                HammerPipeline* pipeline, 
                HammerTexture* texture, 
@@ -143,7 +166,6 @@ public:
 
     ~HammerPipeline();
 
-    // Disable copying to avoid double-deletion of Vulkan handles
     HammerPipeline(const HammerPipeline&) = delete;
     HammerPipeline& operator=(const HammerPipeline&) = delete;
 

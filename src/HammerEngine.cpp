@@ -4,6 +4,9 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+#define TINYOBJLOADER_IMPLEMENTATION
+#include "../include/HammerEngine/HammerEngine.h"
+
 #include <glm/ext/vector_float2.hpp>
 #include <glm/ext/vector_float3.hpp>
 #include <vulkan/vulkan_core.h>
@@ -29,10 +32,7 @@
 #include <cstdint>
 #include <limits>
 #include <array>
-#include <optional>
 #include <set>
-
-#include "../include/HammerEngine/HammerEngine.h"
 
 uint32_t WindowWidth = 800;
 uint32_t WindowHeight = 600;
@@ -269,6 +269,64 @@ void HammerEngine::recreateSwapChain() {
     createDepthResources();
     createFramebuffers();
 }
+
+
+HammerModel::HammerModel(const std::string& path){
+        tinyobj::attrib_t attrib;
+        std::vector<tinyobj::shape_t> shapes;
+        std::vector<tinyobj::material_t> materials;
+        std::string warn, err;
+
+        std::string warn_and_err; 
+        bool ret = tinyobj::LoadObj(
+            &attrib, 
+            &shapes, 
+            &materials, 
+            &warn_and_err, 
+            path.c_str(), 
+            nullptr,   
+            true
+        );
+
+        if (!ret) {
+            throw std::runtime_error("HammerEngine: Failed to load OBJ: " + warn_and_err);
+        }
+
+        std::unordered_map<Vertex, uint32_t> uniqueVertices{};
+
+        for (const auto& shape : shapes) {
+            for (const auto& index : shape.mesh.indices) {
+                Vertex vertex{};
+
+                // Position
+                vertex.pos = {
+                    attrib.vertices[3 * index.vertex_index + 0],
+                    attrib.vertices[3 * index.vertex_index + 1],
+                    attrib.vertices[3 * index.vertex_index + 2]
+                };
+
+                // UV Coordinates (with Vulkan Y-flip)
+                if (index.texcoord_index >= 0) {
+                    vertex.texCoord = {
+                        attrib.texcoords[2 * index.texcoord_index + 0],
+                        1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
+                    };
+                }
+
+                // Default Color (White)
+                vertex.color = {1.0f, 1.0f, 1.0f};
+
+                // Deduplication: only add vertex if it's new
+                if (uniqueVertices.count(vertex) == 0) {
+                    uniqueVertices[vertex] = static_cast<uint32_t>(vertexData.size());
+                    vertexData.push_back(vertex);
+                }
+
+                indexData.push_back(uniqueVertices[vertex]);
+            }
+        }
+    }
+
 
 void HammerEngine::addMeshRenderer(HammerMesh mesh){
     meshs.push_back(std::make_unique<HammerMesh>(mesh.engine, mesh.pipeline, mesh.texture, mesh.vertexData, mesh.indexData));
