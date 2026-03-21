@@ -45,3 +45,90 @@ If you are building a app that you need to have the controle over the mouse curs
 If mouse lock it set to 0 the mouse will be free to move, if it 1 the mouse can not longer move.
 
 `Engine.mouseLock = 0;`
+
+
+
+
+
+
+### 3. Initialization
+
+Before we can load textures or create shapes, we have to wake the engine up. This involves two critical calls:
+C++
+
+```
+Engine.initWindow(); // Creates the GLFW window
+Engine.initVulkan(); // Initializes the Vulkan API and graphics device
+```
+
+    Note: Always call these after you have set your WindowWidth and WindowHeight, otherwise the engine won't know what size to make the window!
+
+4. Textures and Pipelines
+
+Hammer uses Pipelines to tell the GPU how to process your data and Textures to give your objects color.
+
+4.1 Loading a Texture
+
+We use std::make_unique to manage the memory of our texture. We also specify a filter (like Nearest for crisp pixel art).
+C++
+
+`auto mainTexture = std::make_unique<HammerTexture>(Engine, "textures/texture.png", HammerTextureFilter::Nearest);`
+
+4.2 Creating a Pipeline
+
+The pipeline needs your vertex and fragment shaders.
+C++
+
+auto mainPipeline = std::make_unique<HammerPipeline>(Engine, "shaders/vert.spv", "shaders/frag.spv", 1, true);
+
+5. Creating a Mesh
+
+A Mesh is the actual object in your world. It requires three things: Vertices (points in space), Indices (the order to connect those points), and the Texture/Pipeline we created above.
+C++
+
+// Define a simple square
+std::vector<Vertex> vertices = {
+    {{-0.5f, -0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
+    {{ 0.5f, -0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}},
+    {{ 0.5f,  0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 0.0f}},
+    {{-0.5f,  0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}
+};
+std::vector<uint32_t> indices = { 0, 1, 2, 2, 3, 0 };
+
+// Add the mesh to the engine's list
+Engine.meshs.push_back(std::make_unique<HammerMesh>(Engine, mainPipeline.get(), mainTexture.get(), vertices, indices));
+
+6. The Main Loop
+
+Finally, we create the "heartbeat" of your application. This loop runs every frame until you close the window.
+C++
+
+Engine.drawPassStart(); // Prepare the GPU for drawing
+
+while (!glfwWindowShouldClose(Engine.window)) {
+    Engine.updateFrameTimeStart(); // Start the frame timer
+
+    // --- Input & Logic ---
+    if (glfwGetKey(Engine.window, GLFW_KEY_W) == GLFW_PRESS) {
+        // Handle movement or logic here!
+    }
+
+    Engine.updateCameraDefault2D(); // Update the camera view
+    Engine.drawFrame();             // Render everything in Engine.meshs
+    
+    Engine.updateFrameTimeEnd();   // End the frame timer
+}
+
+Engine.drawPassEnd(); // Clean up GPU tasks
+
+7. Memory Cleanup
+
+Because we are working with C++ and Vulkan, we need to be responsible. Before the program ends, ensure you reset your unique pointers to destroy the Vulkan resources in the correct order.
+C++
+
+mainTexture.reset(); 
+mainPipeline.reset();
+
+Congratulations!
+
+You've just built a functional 2D rendering loop in HammerEngine. Your engine is now initialized, your textures are loaded, and your mesh is ready for action.
