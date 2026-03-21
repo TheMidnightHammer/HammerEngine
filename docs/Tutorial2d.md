@@ -1,4 +1,4 @@
-Welcome to the HammerEngine documentation. This tutorial will walk you through the evolution of a HammerEngine project, starting with basic 2D rendering and moving meshs around.
+Welcome to the HammerEngine documentation. This tutorial will walk you through the evolution of a Hammer project, starting with basic 2D rendering, moving meshs and collision using HammerRect.
 This tutorial asumes that you have a midium undersanding of C++.
 
 Now lets get started.
