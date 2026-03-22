@@ -46,26 +46,54 @@ If mouse lock it set to 0 the mouse will be free to move, if it 1 the mouse can 
 
 `Engine.mouseLock = 0;`
 
+### 2.6 Max textures
+Hammer needs to know how many textures in total there will be, i recommand putting 1.5 times as much as you will need. If you get any whird errors from the validation layers try ingresing the numbre.
+For this example we will put 1000 to avoid futur head aks.
 
+`Engine.MaxTextures = 1000;`
 
+### 2.7 Camera speed
 
+If you are using the build in cameras from Hammer the cameraSpeed variable will change the speed at witch the camera move in all axis.
 
+`Engine.cameraSpeed = 0.1f;`
+
+### 2.8 Render distance
+
+Hammer has a variable that changes the render distance of the app.
+
+`Engine.renderDistance = 16.0f;`
+
+### 2.9 Sensitivity
+
+When you use the build in cameras from Hammer you can change the sensitivity of the camera.
+
+`Engine.renderDistance = 16.0f;`
 
 ### 3. Initialization
 
 Before we can load textures or create shapes, we have to wake the engine up. This involves two critical calls:
-C++
 
 ```
-Engine.initWindow(); // Creates the GLFW window
-Engine.initVulkan(); // Initializes the Vulkan API and graphics device
+Engine.initWindow();
+Engine.initVulkan();
 ```
 
-    Note: Always call these after you have set your WindowWidth and WindowHeight, otherwise the engine won't know what size to make the window!
+    Note: You must call these function afther configuring the Hammer instance.
 
-4. Textures and Pipelines
+### 4. Pipelines
 
-Hammer uses Pipelines to tell the GPU how to process your data and Textures to give your objects color.
+In graphics programming graphics pipelines need to be configured to use effects or for to put anything on the screen. HammerPipeline takes a few parameters: the Hammer instance, vertex shader path, fragment shader path, render triangle mod, render both sides of the triangle.
+
+The shaders MUST be precompiled, the triangle mod is when you want to render the triangle normaly or only the wireframe (each 3 lines of a triangle), the render 2 side triangle mod determines if you want to see both sides of trianges most games only render 1 side.
+
+```
+std::string vPath = "shaders/vert.spv";
+std::string fPath = "shaders/frag.spv";
+auto mainPipeline = std::make_unique<HammerPipeline>(
+    Engine, vPath, fPath, 1, true
+);
+```
 
 4.1 Loading a Texture
 
