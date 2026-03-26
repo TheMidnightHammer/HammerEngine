@@ -27,7 +27,21 @@ include_directories(
 
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
 
+target_compile_definitions(voxel_Engine PUBLIC GLM_ENABLE_EXPERIMENTAL)
+
 target_link_libraries(${PROJECT_NAME}
+    PRIVATE 
     vulkan
     glfw
 )
+
+if(WIN32 AND NOT MSVC)
+    target_compile_options(${PROJECT_NAME} PRIVATE -Wall)
+    target_link_libraries(${PROJECT_NAME} PRIVATE -static-libgcc -static-libstdc++)
+    
+    set_target_properties(${PROJECT_NAME} PROPERTIES WIN32_EXECUTABLE TRUE)
+endif()
+
+if(UNIX AND NOT APPLE)
+    target_link_libraries(${PROJECT_NAME} PRIVATE pthread dl)
+endif()
