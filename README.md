@@ -27,6 +27,7 @@ Easy to load 3d models: Uses tinyobjloader to load .obj files discards any verte
 
 <img width="632" height="706" alt="image" src="https://github.com/user-attachments/assets/157a91fb-d69d-4deb-9de6-efdec45e3402" />
 <img width="632" height="706" alt="Screenshot from 2026-03-18 09-32-32" src="https://github.com/user-attachments/assets/30bb86b6-7093-4a84-9413-d55ffb2b04e6" />
+<img width="1228" height="966" alt="image" src="https://github.com/user-attachments/assets/7d6a529a-c3ba-4a30-881c-aeba3b27118b" />
 
 
 # Docs
