@@ -10,8 +10,6 @@
 #include <memory>
 #include <glm/glm.hpp>
 
-// ... (faceVertices and faceIndicesPattern remain unchanged) ...
-
 static const Vertex faceVertices[6][4] = {
     // Top face (+Y)
     {
@@ -84,11 +82,10 @@ void generateCubeGrid(std::vector<Vertex>& outVertices, std::vector<uint32_t>& o
 int main() {
     HammerEngine Engine;
 
-    // --- Configuration ---
     Engine.enableValidationLayers = true;
     Engine.WindowWidth = 1200;
     Engine.WindowHeight = 900;
-    Engine.MaxTextures = 1000; // This ensures the Descriptor Pool is large enough
+    Engine.MaxTextures = 1000;
     Engine.mouseLock = 1; 
     Engine.windowName = "Hammer Engine - 3D Texture World";
     Engine.renderDistance = 1000.0f;
@@ -97,53 +94,41 @@ int main() {
     Engine.cameraPosition = glm::vec3(5.0f, 5.0f, 15.0f);
     Engine.cameraFront = glm::normalize(glm::vec3(0.0f, -0.5f, -1.0f));
 
-    // --- Initialization ---
     Engine.initWindow();
     Engine.initVulkan();
 
-    // 1. Create the Pipeline
     std::string vPath = "shaders/vert.spv";
     std::string fPath = "shaders/frag.spv";
     auto mainPipeline = std::make_unique<HammerPipeline>(Engine, vPath, fPath, 1, true);
 
-    // 2. Load Textures (Must happen after initVulkan)
-    // We use Linear filtering for a smooth look
     auto boxTexture = std::make_unique<HammerTexture>(Engine, "textures/texture.png", HammerTextureFilter::Nearest);
 
-    // 3. Prepare Geometry
     std::vector<Vertex> vertices;
     std::vector<uint32_t> indices;
     generateCubeGrid(vertices, indices, 10, 10, 10);
 
-    // 4. Create Mesh and link to the texture
-    // Updated constructor now takes the texture pointer
     auto myMesh = std::make_unique<HammerMesh>(Engine, mainPipeline.get(), boxTexture.get(), vertices, indices);
     
     HammerMesh* meshPtr = myMesh.get();
     Engine.meshs.push_back(std::move(myMesh));
 
-    // --- Main Loop ---
     Engine.drawPassStart();
     while (!glfwWindowShouldClose(Engine.window)) {
         Engine.updateFrameTimeStart();
 
         float time = static_cast<float>(glfwGetTime());
 
-        // Simple animation
         meshPtr->position.y = sin(time) * 0.5f; 
         meshPtr->rotation.y = time * 20.0f;
 
         Engine.updateCameraDefault3D();
         
-        // drawFrame calls recordCommandBuffer, which now binds the texture sets
         Engine.drawFrame(); 
         
         Engine.updateFrameTimeEnd();
     }
     Engine.drawPassEnd();
 
-    // --- Cleanup ---
-    // Destroy textures explicitly before the Engine shuts down Vulkan
     boxTexture.reset();
     mainPipeline.reset();
 
