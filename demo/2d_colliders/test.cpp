@@ -14,11 +14,10 @@
 int main() {
     HammerEngine Engine;
 
-    // 1. Setup
     Engine.enableValidationLayers = true;
     Engine.WindowWidth = 1000;
     Engine.WindowHeight = 1000;
-    Engine.MaxTextures = 1000; // Keep this for Descriptor Pool headroom
+    Engine.MaxTextures = 1000;
     Engine.cameraPosition = glm::vec3(0, 0, 2);
     Engine.windowName = "Hammer Engine - Sprite Movement";
     Engine.mouseLock = 0;
@@ -29,13 +28,10 @@ int main() {
     Engine.initWindow();
     Engine.initVulkan();
 
-    // 2. Texture Loading (NEW)
-    // Create the texture object once after Vulkan is ready
     auto mainTexture = std::make_unique<HammerTexture>(Engine, "textures/texture.png", HammerTextureFilter::Nearest);
 
     HammerRectSquareF player{0, 2, 1, 1};
 
-    // Keep vertices relative to (0,0,0) so mesh->position handles movement
     auto getVertices = [&](const HammerRectSquareF& p) {
         return std::vector<Vertex>{
             {{-0.5f, -0.5f, -1.5f}, {1.0f, 0.0f, 0.0f}, {0.0000f, 0.0625f}},
@@ -50,16 +46,13 @@ int main() {
     std::string vShader = "shaders/vert.spv";
     std::string fShader = "shaders/frag.spv";
 
-    // 3. Pipeline and Mesh creation
     auto mainPipeline = std::make_unique<HammerPipeline>(Engine, vShader, fShader, 1, true);
     
-    // Pass the mainTexture.get() here
     auto sceneMesh = std::make_unique<HammerMesh>(Engine, mainPipeline.get(), mainTexture.get(), getVertices(player), localIndices);
 
     HammerMesh* meshPtr = sceneMesh.get();
     Engine.meshs.push_back(std::move(sceneMesh));
 
-    // 5. Main Loop
     Engine.drawPassStart();
     while (!glfwWindowShouldClose(Engine.window)) {
         Engine.updateFrameTimeStart();
@@ -71,7 +64,6 @@ int main() {
         if (glfwGetKey(Engine.window, GLFW_KEY_L) == GLFW_PRESS) { player.x += 0.1f; moved = true; }
 
         if (moved) {
-            // Update the transform matrix via Push Constants (very fast)
             meshPtr->position = glm::vec3(player.x, player.y, 0);
         }
 
@@ -81,7 +73,6 @@ int main() {
     }
     Engine.drawPassEnd();
 
-    // 6. Cleanup
     mainTexture.reset();
     mainPipeline.reset();
 
